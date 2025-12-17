@@ -4,6 +4,7 @@
  */
 
 const logger = require('../utils/logger');
+const { query, getConnection } = require('../config/database.config');
 
 class DeviceController {
   /**
@@ -11,8 +12,38 @@ class DeviceController {
    */
   static async setConfig(deviceSn, payload) {
     logger.debug('Setting device config', { deviceSn, payload });
-    // TODO: Implement database logic
-    return { success: true };
+    console.log('Payload received for setConfig:', payload);
+    
+    try {
+      // Check if device exists
+      const existingDevice = await query(
+        'SELECT id, device_sn, config FROM devices WHERE device_sn = ?',
+        [deviceSn]
+      );
+
+      const configJson = JSON.stringify(payload);
+
+      if (existingDevice.length > 0) {
+        // Update existing device config
+        await query(
+          'UPDATE devices SET config = ?, updated_at = NOW() WHERE device_sn = ?',
+          [configJson, deviceSn]
+        );
+        logger.info('Device config updated', { deviceSn });
+      } else {
+        // Insert new device with config
+        await query(
+          'INSERT INTO devices (device_sn, config, status, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
+          [deviceSn, configJson, 'offline']
+        );
+        logger.info('New device created with config', { deviceSn });
+      }
+
+      return { success: true, deviceSn, config: payload };
+    } catch (error) {
+      logger.error('Error setting device config', { deviceSn, error: error.message });
+      throw error;
+    }
   }
 
   /**

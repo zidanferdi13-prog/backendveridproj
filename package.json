@@ -8,19 +8,23 @@
     "dev": "nodemon src/index.js",
     "test": "jest"
   },
-  "keywords": ["mqtt", "iot", "veridface"],
+  "keywords": [
+    "mqtt",
+    "iot",
+    "veridface"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mqtt": "^5.0.0",
-    "express": "^4.18.2",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
-    "mongoose": "^7.0.0",
+    "express": "^4.18.2",
+    "mqtt": "^5.0.0",
+    "mysql2": "^3.16.0",
     "winston": "^3.8.2"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20",
-    "jest": "^29.5.0"
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.20"
   }
 }

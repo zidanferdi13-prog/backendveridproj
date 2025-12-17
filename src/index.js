@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const MQTTClient = require('./mqtt/client');
 const logger = require('./utils/logger');
+const { connectDatabase, disconnectDatabase, isConnected } = require('./config/database.config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -57,6 +58,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     mqtt: mqttClient?.isConnected() ? 'connected' : 'disconnected',
+    database: isConnected() ? 'connected' : 'disconnected',
     timestamp: new Date(),
   });
 });
@@ -70,6 +72,9 @@ app.get('/api/status', (req, res) => {
     mqtt: {
       connected: mqttClient?.isConnected() || false,
       broker: MQTT_BROKER_URL,
+    },
+    database: {
+      connected: isConnected(),
     },
     uptime: process.uptime(),
   });
@@ -177,6 +182,9 @@ app.use((req, res) => {
  */
 async function start() {
   try {
+    // Initialize Database
+    await connectDatabase();
+
     // Initialize MQTT
     await initializeMQTT();
 
@@ -199,6 +207,7 @@ process.on('SIGINT', async () => {
   if (mqttClient) {
     await mqttClient.disconnect();
   }
+  await disconnectDatabase();
   process.exit(0);
 });
 
