@@ -7,7 +7,7 @@ CREATE DATABASE IF NOT EXISTS veridface CHARACTER SET utf8mb4 COLLATE utf8mb4_un
 USE veridface;
 
 -- Devices table
-CREATE TABLE IF NOT EXISTS devices (
+CREATE TABLE IF NOT EXISTS m_devices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     device_sn VARCHAR(100) NOT NULL UNIQUE,
     device_name VARCHAR(255),
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS devices (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Persons table
-CREATE TABLE IF NOT EXISTS persons (
+CREATE TABLE IF NOT EXISTS m_persons (
     id INT AUTO_INCREMENT PRIMARY KEY,
     person_id VARCHAR(100) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS persons (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Identification records table
-CREATE TABLE IF NOT EXISTS identification_records (
+CREATE TABLE IF NOT EXISTS m_identification_records (
     id INT AUTO_INCREMENT PRIMARY KEY,
     record_id VARCHAR(100) NOT NULL UNIQUE,
     device_sn VARCHAR(100) NOT NULL,
@@ -58,8 +58,8 @@ CREATE TABLE IF NOT EXISTS identification_records (
     INDEX idx_person_id (person_id),
     INDEX idx_captured_at (captured_at),
     INDEX idx_pass_status (pass_status),
-    FOREIGN KEY (device_sn) REFERENCES devices(device_sn) ON DELETE CASCADE,
-    FOREIGN KEY (person_id) REFERENCES persons(person_id) ON DELETE SET NULL
+    FOREIGN KEY (device_sn) REFERENCES m_devices(device_sn) ON DELETE CASCADE,
+    FOREIGN KEY (person_id) REFERENCES m_persons(person_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Event logs table
@@ -76,16 +76,16 @@ CREATE TABLE IF NOT EXISTS event_logs (
     INDEX idx_event_type (event_type),
     INDEX idx_event_level (event_level),
     INDEX idx_created_at (created_at),
-    FOREIGN KEY (device_sn) REFERENCES devices(device_sn) ON DELETE CASCADE
+    FOREIGN KEY (device_sn) REFERENCES m_devices(device_sn) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Device passwords table
-CREATE TABLE IF NOT EXISTS device_passwords (
+CREATE TABLE IF NOT EXISTS m_device_passwords (
     id INT AUTO_INCREMENT PRIMARY KEY,
     device_sn VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (device_sn) REFERENCES devices(device_sn) ON DELETE CASCADE,
+    FOREIGN KEY (device_sn) REFERENCES m_devices(device_sn) ON DELETE CASCADE,
     UNIQUE KEY unique_device_password (device_sn)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
