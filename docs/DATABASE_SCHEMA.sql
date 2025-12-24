@@ -8,7 +8,7 @@ USE veridface;
 
 -- Devices table
 CREATE TABLE IF NOT EXISTS m_devices (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     device_sn VARCHAR(100) NOT NULL UNIQUE,
     device_name VARCHAR(255),
     device_type VARCHAR(50),
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS m_devices (
 
 -- Persons table
 CREATE TABLE IF NOT EXISTS m_persons (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     person_id VARCHAR(100) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     id_number VARCHAR(100),
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS m_persons (
 
 -- Identification records table
 CREATE TABLE IF NOT EXISTS m_identification_records (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     record_id VARCHAR(100) NOT NULL UNIQUE,
     device_sn VARCHAR(100) NOT NULL,
     person_id VARCHAR(100),
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS m_identification_records (
 
 -- Event logs table
 CREATE TABLE IF NOT EXISTS event_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     event_id VARCHAR(100) NOT NULL UNIQUE,
     device_sn VARCHAR(100) NOT NULL,
     event_type VARCHAR(50) NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS event_logs (
 
 -- Device passwords table
 CREATE TABLE IF NOT EXISTS m_device_passwords (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     device_sn VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
