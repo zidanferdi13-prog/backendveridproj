@@ -11,54 +11,20 @@ const logger = require('./utils/logger');
 const { connectDatabase, disconnectDatabase, isConnected } = require('./config/database.config');
 
 const app = express();
+
+// Import userAPI router
+const userAPI = require('./api/userAPI');
 const PORT = process.env.PORT || 3000;
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 
 // Middleware
+
 app.use(express.json());
 app.use(cors());
 
-// Test route: Insert one row into each main table
-const { query } = require('./config/database.config');
-const { v4: uuidv4 } = require('uuid');
+// Route for user API
+app.use('/user', userAPI);
 
-app.post('/api/test/insert-sample', async (req, res) => {
-  try {
-    // Insert into m_devices
-    await query(
-      'INSERT INTO m_devices (id, device_sn, device_name, device_type, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
-      [uuidv4(), 'DEV001', 'Main Device', 'TypeA', 'online']
-    );
-
-    // Insert into m_persons
-    await query(
-      'INSERT INTO m_persons (id, person_id, name, id_number, phone, face_features, metadata, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
-      [uuidv4(), 'P001', 'John Doe', 'ID123', '08123456789', JSON.stringify({}), JSON.stringify({})]
-    );
-
-    // Insert into m_identification_records
-    await query(
-      'INSERT INTO m_identification_records (id, record_id, device_sn, person_id, identify_type, temperature, mask_status, pass_status, image_url, captured_at, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, NOW())',
-      [uuidv4(), 'R001', 'DEV001', 'P001', 'face', 36.5, 'without_mask', 'pass', 'http://image.url', JSON.stringify({})]
-    );
-
-    // Insert into event_logs
-    await query(
-      'INSERT INTO event_logs (id, event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
-      [uuidv4(), 'E001', 'DEV001', 'alarm', 'warning', 'Test alarm', JSON.stringify({})]
-    );
-
-    // Insert into m_device_passwords
-    await query(
-      'INSERT INTO m_device_passwords (id, device_sn, password_hash, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
-      [uuidv4(), 'DEV001', 'hashedpassword']
-    );
-
-    res.json({ success: true, message: 'Inserted one row into each table with UUIDs.' });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 const { TOPICS } = require('./config/mqtt.config');
 const TopicParser = require('./utils/topicParser');
