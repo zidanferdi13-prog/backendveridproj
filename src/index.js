@@ -22,7 +22,7 @@ const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 app.use(express.json());
 app.use(cors());
 
-// Route for user API
+// Route for frontend API
 app.use('/user', userAPI);
 
 
