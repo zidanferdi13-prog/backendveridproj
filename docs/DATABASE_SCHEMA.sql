@@ -8,7 +8,7 @@ USE veridface;
 
 -- Devices table
 CREATE TABLE IF NOT EXISTS m_devices (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    id VARCHAR(100) NOT NULL UNIQUE,
     device_sn VARCHAR(100) NOT NULL UNIQUE,
     device_name VARCHAR(255),
     device_type VARCHAR(50),

@@ -12,8 +12,6 @@ const { connectDatabase, disconnectDatabase, isConnected } = require('./config/d
 
 const app = express();
 
-// Import userAPI router
-const userAPI = require('./api/userAPI');
 const PORT = process.env.PORT || 3000;
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 
@@ -23,8 +21,16 @@ app.use(express.json());
 app.use(cors());
 
 // Route for frontend API
-app.use('/user', userAPI);
+app.use('/user', require('./api/userAPI'));
+app.use('/device', require('./api/deviceAPI'));
+// app.use('/permission', require('./api/permissionAPI'));
+// app.use('/visitor', require('./api/visitorAPI'));
+// app.use('/report', require('./api/reportAPI'));
+// app.use('/attendance', require('./api/attendanceAPI'));
+// app.use('/log', require('./api/logAPI'));
+// app.use('/settings', require('./api/settingsAPI'));
 
+// MQTT Related Imports
 
 const { TOPICS } = require('./config/mqtt.config');
 const TopicParser = require('./utils/topicParser');

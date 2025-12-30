@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
 
-// Placeholder for POST /user/userdata
+// Placeholder for POST /device/devicedata
 const { query } = require('../config/database.config');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parse');
-const { route } = require('./deviceAPI');
+// ...existing code...
 const upload = multer({ dest: 'uploads/' });
 
 router.get('/devicedata', async (req, res) => {
+    console.log("Fetching device data");
     try {
         const result = await query('SELECT * FROM m_devices ORDER BY device_name ASC');
         res.status(200).json({ data: result });
@@ -89,7 +90,7 @@ router.post('/devicedata/configDevice', async (req, res) => {
     }
 });
 
-route.post('/devicedata/permission', async (req, res) => {
+router.post('/devicedata/permission', async (req, res) => {
     const { id_device } = req.body;
     try {
         const result = await query(
@@ -102,7 +103,7 @@ route.post('/devicedata/permission', async (req, res) => {
     }
 });
 
-route.post('/devicedata/adddevice', async (req, res) => {
+router.post('/devicedata/adddevice', async (req, res) => {
     const {
         device_sn, device_model,
         device_name, device_location,
@@ -122,7 +123,7 @@ route.post('/devicedata/adddevice', async (req, res) => {
     }
 });
 
-route.post('/devicedata/deletedevice', async (req, res) => {
+router.post('/devicedata/deletedevice', async (req, res) => {
     const { id_device } = req.body;
     if (!id_device) {
         return res.status(400).json({ message: 'id_device is required' });
