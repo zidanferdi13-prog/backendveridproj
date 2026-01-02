@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// Placeholder for POST /user/userdata
 const { query } = require('../config/database.config');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');

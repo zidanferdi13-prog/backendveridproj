@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-// Placeholder for POST /device/devicedata
 const { query } = require('../config/database.config');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parse');
-// ...existing code...
 const upload = multer({ dest: 'uploads/' });
 
 router.get('/devicedata', async (req, res) => {

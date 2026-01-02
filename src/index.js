@@ -23,12 +23,12 @@ app.use(cors());
 // Route for frontend API
 app.use('/user', require('./api/userAPI'));
 app.use('/device', require('./api/deviceAPI'));
-// app.use('/permission', require('./api/permissionAPI'));
-// app.use('/visitor', require('./api/visitorAPI'));
-// app.use('/report', require('./api/reportAPI'));
-// app.use('/attendance', require('./api/attendanceAPI'));
-// app.use('/log', require('./api/logAPI'));
-// app.use('/settings', require('./api/settingsAPI'));
+app.use('/permission', require('./api/permissionAPI'));
+app.use('/visitor', require('./api/visitorAPI'));
+app.use('/report', require('./api/reportAPI'));
+app.use('/attendance', require('./api/attendanceAPI'));
+app.use('/log', require('./api/logAPI'));
+app.use('/settings', require('./api/settingsAPI'));
 
 // MQTT Related Imports
 
