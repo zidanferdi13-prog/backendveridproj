@@ -22,13 +22,13 @@ router.post('/devicedata/configNetwork', async (req, res) => {
     const { id_device,
         ip_state, ip_address,
         ip_subnet_mask, ip_gateway, ip_dns1,
-        netrowk_mode, wifi_ssid, wifi_password
+        network_mode, wifi_ssid, wifi_password
     } = req.body;
     try {
         const result = await query(
             `UPDATE m_devices SET ip_state = ?, ip_address = ?, 
             ip_subnet_mask = ?, ip_gateway = ?, ip_dns1 = ?, 
-            netrowk_mode = ?, wifi_ssid = ?, wifi_password = ? 
+            network_mode = ?, wifi_ssid = ?, wifi_password = ? 
             WHERE id_device = ?`,
             [
                 ip_state,
@@ -36,7 +36,7 @@ router.post('/devicedata/configNetwork', async (req, res) => {
                 ip_subnet_mask,
                 ip_gateway,
                 ip_dns1,
-                netrowk_mode,
+                network_mode,
                 wifi_ssid,
                 wifi_password,
                 id_device
@@ -52,7 +52,7 @@ router.post('/devicedata/remote', async (req, res) => {
     const { id_device, remote_command } = req.body;
     try {
         const result = await query(
-            `UPDATE m_devices SET remote_command = ? WHERE id_device = ?`,
+            `UPDATE m_devices SET remote_command = ?, remote_command_status = 'pending', remote_command_sent_at = NOW() WHERE id_device = ?`,
             [remote_command, id_device]
         );
         res.status(200).json({ message: 'Remote command sent successfully', data: result });
@@ -112,7 +112,7 @@ router.post('/devicedata/adddevice', async (req, res) => {
     }
     try {
         const result = await query(
-            `INSERT INTO m_devices (id_device, device_sn, device_model, device_name, device_location, device_group, device_note) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO m_devices (id_device, device_sn, device_model, device_name, device_location, device_group, device_note, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'offline', NOW(), NOW())`,
             [uuidv4(), device_sn, device_model, device_name, device_location, device_group, device_note]
         );
         res.status(201).json({ message: 'Device added successfully', data: result });

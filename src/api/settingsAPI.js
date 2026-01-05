@@ -24,7 +24,7 @@ router.post('/settingsdata/update', async (req, res) => {
     try {
         const result = await query(
             `UPDATE settings
-            SET setting_value = ?   
+            SET setting_value = ?, updated_at = NOW()
             WHERE id_user = ? AND setting_key = ?`,
             [
                 setting_value, id_user, setting_key

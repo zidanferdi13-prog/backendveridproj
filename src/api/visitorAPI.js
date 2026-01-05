@@ -20,19 +20,19 @@ router.get('/visitordata', async (req, res) => {
 
 router.post('/visitordata/add', async (req, res) => {
     const {
-        visitor_name, visitor_idcard, visitor_phone, visitor_email,
+        visitor_name, visitor_phone, visitor_email,
         visit_purpose, visit_person, visit_date,
         visit_time_in, visit_time_out, note } = req.body;
     const id_visitor = uuidv4();
     try {
         const result = await query(
             `INSERT INTO m_visitors
-            (id_visitor, visitor_name, visitor_idcard, visitor_phone, visitor_email,
+            (id_visitor, visitor_name, visitor_phone, visitor_email,
             visit_purpose, visit_person, visit_date,
             visit_time_in, visit_time_out, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                id_visitor, visitor_name, visitor_idcard, visitor_phone, visitor_email, 
+                id_visitor, visitor_name, visitor_phone, visitor_email, 
                 visit_purpose, visit_person, visit_date,
                 visit_time_in, visit_time_out, note
             ]

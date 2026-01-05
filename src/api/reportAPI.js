@@ -19,13 +19,13 @@ router.get('/reportdata', async (req, res) => {
 });
 
 router.post('/reportdata/generate', async (req, res) => {
-    const { report_type, parameters } = req.body;
+    const { report_type, report_name, parameters, file_format, generated_by } = req.body;
     try {
-        // Placeholder logic for report generation
         const reportId = uuidv4();
         const result = await query(
-            `INSERT INTO reports (id, report_type, parameters, created_at) VALUES (?, ?, ?, NOW())`,
-            [reportId, report_type, JSON.stringify(parameters)]
+            `INSERT INTO reports (id, report_type, report_name, parameters, file_format, status, generated_by, created_at)
+             VALUES (?, ?, ?, ?, ?, 'pending', ?, NOW())`,
+            [reportId, report_type, report_name || null, JSON.stringify(parameters || {}), file_format || 'excel', generated_by || null]
         );
         res.status(200).json({ message: 'Report generated successfully', report_id: reportId });
     }

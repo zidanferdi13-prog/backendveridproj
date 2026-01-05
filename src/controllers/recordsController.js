@@ -19,7 +19,7 @@ class RecordsController {
       const ids = payload.recordIds;
       if (ids.length === 0) return { deletedCount: 0 };
       const result = await query(
-        `DELETE FROM m_identification_records WHERE record_id IN (${ids.map(() => '?').join(',')})`,
+        `DELETE FROM t_identification_records WHERE id IN (${ids.map(() => '?').join(',')})`,
         ids
       );
       return { deletedCount: result.affectedRows };
@@ -35,22 +35,22 @@ class RecordsController {
   static async findRecords(deviceSn, payload) {
     logger.debug('Finding records', { deviceSn, payload });
     try {
-      let sql = 'SELECT * FROM m_identification_records WHERE 1=1';
+      let sql = 'SELECT * FROM t_identification_records WHERE 1=1';
       const params = [];
       if (deviceSn) {
         sql += ' AND device_sn = ?';
         params.push(deviceSn);
       }
       if (payload.personId) {
-        sql += ' AND person_id = ?';
+        sql += ' AND user_id = ?';
         params.push(payload.personId);
       }
       if (payload.startDate) {
-        sql += ' AND captured_at >= ?';
+        sql += ' AND pass_datetime >= ?';
         params.push(payload.startDate);
       }
       if (payload.endDate) {
-        sql += ' AND captured_at <= ?';
+        sql += ' AND pass_datetime <= ?';
         params.push(payload.endDate);
       }
       const result = await query(sql, params);
@@ -67,22 +67,22 @@ class RecordsController {
   static async reportRecords(deviceSn, payload) {
     logger.debug('Reporting records', { deviceSn, payload });
     try {
-      let sql = 'SELECT COUNT(*) as recordCount FROM m_identification_records WHERE 1=1';
+      let sql = 'SELECT COUNT(*) as recordCount FROM t_identification_records WHERE 1=1';
       const params = [];
       if (deviceSn) {
         sql += ' AND device_sn = ?';
         params.push(deviceSn);
       }
       if (payload.personId) {
-        sql += ' AND person_id = ?';
+        sql += ' AND user_id = ?';
         params.push(payload.personId);
       }
       if (payload.startDate) {
-        sql += ' AND captured_at >= ?';
+        sql += ' AND pass_datetime >= ?';
         params.push(payload.startDate);
       }
       if (payload.endDate) {
-        sql += ' AND captured_at <= ?';
+        sql += ' AND pass_datetime <= ?';
         params.push(payload.endDate);
       }
       const result = await query(sql, params);
