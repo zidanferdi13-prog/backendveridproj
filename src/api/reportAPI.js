@@ -10,6 +10,7 @@ const upload = multer({ dest: 'uploads/' });
 
 router.get('/reportdata', async (req, res) => {
     console.log("Fetching report data");
+    console.log('[API] GET /reportdata');
     try {
         const result = await query('SELECT * FROM reports ORDER BY created_at DESC');
         res.status(200).json({ data: result });
@@ -20,6 +21,7 @@ router.get('/reportdata', async (req, res) => {
 
 router.post('/reportdata/generate', async (req, res) => {
     const { report_type, report_name, parameters, file_format, generated_by } = req.body;
+    console.log('[API] POST /reportdata/generate', req.body);
     try {
         const reportId = uuidv4();
         const result = await query(

@@ -9,7 +9,7 @@ const csv = require('csv-parse');
 const upload = multer({ dest: 'uploads/' });
 
 router.get('/logdata', async (req, res) => {
-    console.log("Fetching log data");
+    console.log('[API] GET /logdata');
     try {
         const result = await query('SELECT * FROM logs ORDER BY timestamp DESC');
         res.status(200).json({ data: result });
@@ -20,6 +20,7 @@ router.get('/logdata', async (req, res) => {
 
 router.post('/logdata/add', async (req, res) => {
     const { log_level, log_category, message, details, user_id, ip_address } = req.body;
+    console.log('[API] POST /logdata/add', req.body);
     try {
         const logId = uuidv4();
         await query(
@@ -32,5 +33,9 @@ router.post('/logdata/add', async (req, res) => {
         res.status(500).json({ message: 'Database error', error: error.message });
     }
 });
+
+router.get('/logdata/exportrecords',
+
+)
 
 module.exports = router;

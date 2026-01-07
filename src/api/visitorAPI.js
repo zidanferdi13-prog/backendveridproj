@@ -11,6 +11,7 @@ const upload = multer({ dest: 'uploads/' });
 
 router.get('/visitordata', async (req, res) => {
     try {
+        console.log('[API] GET /visitordata');
         const result = await query('SELECT * FROM m_visitors ORDER BY visitor_name ASC');
         res.status(200).json({ data: result });
     } catch (error) {
@@ -23,6 +24,7 @@ router.post('/visitordata/add', async (req, res) => {
         visitor_name, visitor_phone, visitor_email,
         visit_purpose, visit_person, visit_date,
         visit_time_in, visit_time_out, note } = req.body;
+    console.log('[API] POST /visitordata/add', req.body);
     const id_visitor = uuidv4();
     try {
         const result = await query(
@@ -45,6 +47,7 @@ router.post('/visitordata/add', async (req, res) => {
 
 router.post('/visitordata/delete', async (req, res) => {
     const { id_visitor } = req.body;
+    console.log('[API] POST /visitordata/delete', req.body);
     if (!id_visitor) {
         return res.status(400).json({ message: 'id_visitor is required' });
     }  
@@ -63,6 +66,7 @@ router.post('/visitordata/detail', async (req, res) => {
     const { id_visitor, visitor_name, visitor_idcard, visitor_phone, visitor_email,
         visit_purpose, visit_person, visit_date,
         visit_time_in, visit_time_out, note } = req.body;   
+    console.log('[API] POST /visitordata/detail', req.body);
     if (!id_visitor) {
         return res.status(400).json({ message: 'id_visitor is required' });
     }   

@@ -11,6 +11,7 @@ const upload = multer({ dest: 'uploads/' });
 
 router.get('/permissiondata', async (req, res) => {
     try {
+        console.log('[API] GET /permissiondata');
         const groups = await query(
             `SELECT
                 g.id,
@@ -39,6 +40,7 @@ router.get('/permissiondata', async (req, res) => {
 
 router.post('/permissiondata/addgroup', async (req, res) => {
     try {
+        console.log('[API] POST /permissiondata/addgroup', req.body);
         const { group_name, scope = 'person', note } = req.body;
         const allowedScopes = ['person', 'device', 'visitor', 'both'];
         if (!group_name) {
@@ -61,6 +63,7 @@ router.post('/permissiondata/addgroup', async (req, res) => {
 
 router.post('/permissiondata/deletegroup', async (req, res) => {
     try {
+        console.log('[API] POST /permissiondata/deletegroup', req.body);
         const { id } = req.body;
         if (!id) {
             return res.status(400).json({ message: 'id is required' });
@@ -77,6 +80,7 @@ router.post('/permissiondata/deletegroup', async (req, res) => {
 
 router.post('/permissiondata/renamegroup', async (req, res) => {
     try {
+        console.log('[API] POST /permissiondata/renamegroup', req.body);
         const { id, new_group_name } = req.body;
         if (!id || !new_group_name) {
             return res.status(400).json({ message: 'id and new_group_name are required' });
@@ -94,6 +98,7 @@ router.post('/permissiondata/renamegroup', async (req, res) => {
 
 router.get('/permissiondata/persons', async (req, res) => {
     try {
+        console.log('[API] GET /permissiondata/persons', req.query);
         const { group_name } = req.query;
         let sql = 'SELECT id, employee_number, name, group_name, department_name, email, phone, mobile FROM m_persons WHERE 1=1';
         const params = [];
@@ -113,6 +118,7 @@ router.get('/permissiondata/persons', async (req, res) => {
 
 router.post('/permissiondata/adjustperson', async (req, res) => {
     try {
+        console.log('[API] POST /permissiondata/adjustperson', req.body);
         const { id_person, person_ids, new_group_name } = req.body;
         
         if (!new_group_name) {
@@ -144,6 +150,7 @@ router.post('/permissiondata/adjustperson', async (req, res) => {
 
 router.post('/permissiondata/adjusttime', async (req, res) => {
     try {
+        console.log('[API] POST /permissiondata/adjusttime', req.body);
         const { id_person, access_start_time, access_end_time } = req.body;
         if (!id_person || !access_start_time || !access_end_time) {
             return res.status(400).json({ message: 'id_person, access_start_time, and access_end_time are required' });

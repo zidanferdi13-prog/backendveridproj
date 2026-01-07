@@ -11,6 +11,7 @@ const upload = multer({ dest: 'uploads/' });
 
 router.post('/settingsdata', async (req, res) => {
     let id_user = req.body.id_user;
+    console.log('[API] POST /settingsdata', req.body);
     try {
         const result = await query('SELECT * FROM settings WHERE id_user = ?', [id_user]);
         res.status(200).json({ data: result });
@@ -21,6 +22,7 @@ router.post('/settingsdata', async (req, res) => {
 
 router.post('/settingsdata/update', async (req, res) => {
     const { id_user, setting_key, setting_value } = req.body;
+    console.log('[API] POST /settingsdata/update', req.body);
     try {
         const result = await query(
             `UPDATE settings

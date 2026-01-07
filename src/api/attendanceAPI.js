@@ -11,6 +11,7 @@ const upload = multer({ dest: 'uploads/' });
 
 router.get('/attendancedata', async (req, res) => {
     try {
+        console.log('[API] GET /attendancedata');
         const result = await query('SELECT * FROM attendance_records ORDER BY attendance_date DESC');
         res.status(200).json({ data: result });
     } catch (error) {
@@ -21,6 +22,7 @@ router.get('/attendancedata', async (req, res) => {
 router.post('/attendancedata/record', async (req, res) => {
     const { id_user, attendance_date, time_in, time_out, status, note } = req.body;
     const id_record = uuidv4();
+    console.log('[API] POST /attendancedata/record', req.body);
     if (!id_user || !attendance_date) {
         return res.status(400).json({ message: 'id_user and attendance_date are required' });
     }
@@ -54,6 +56,7 @@ router.post('/attendancedata/record', async (req, res) => {
 
 router.post('/attendancedata/delete', async (req, res) => {
     const { id_record } = req.body;
+    console.log('[API] POST /attendancedata/delete', req.body);
     if (!id_record) {
         return res.status(400).json({ message: 'id_record is required' });
     }
@@ -69,6 +72,7 @@ router.post('/attendancedata/delete', async (req, res) => {
 });
 
 router.get('/attendancedata/eksportcsv', upload.single('file'), async (req, res) => {
+    console.log('[API] GET /attendancedata/eksportcsv');
     try {
         const result = await query('SELECT * FROM attendance_records ORDER BY attendance_date DESC');
         const csvHeaders = 'id_record,id_user,employee_number,user_name,attendance_date,time_in,time_out,status,note\n';
@@ -84,7 +88,6 @@ router.get('/attendancedata/eksportcsv', upload.single('file'), async (req, res)
     }
 });
 
-// router.post('/attendancedata/timedetail', async (req, res) => {
-//     const { id_record, time_in, time_out } = req.body;
+
 
 module.exports = router;
