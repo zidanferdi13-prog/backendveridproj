@@ -27,8 +27,10 @@ app.use('/permission', require('./api/permissionAPI'));
 app.use('/visitor', require('./api/visitorAPI'));
 app.use('/report', require('./api/reportAPI'));
 app.use('/attendance', require('./api/attendanceAPI'));
+app.use('/attendancesys', require('./api/attendancesysAPI'));
 app.use('/log', require('./api/logAPI'));
 app.use('/settings', require('./api/settingsAPI'));
+app.use('/dashboard', require('./api/dashboardAPI'));
 
 // MQTT Related Imports
 
