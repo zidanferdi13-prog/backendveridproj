@@ -38,40 +38,6 @@ router.get('/permissiondata', async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-router.post('/permissiondata/update', async (req, res) => {
-    try {
-        const { person_count, device_count } = req.body;
-
-        // Update person counts
-        for (const item of person_count) {
-            await query(
-                'UPDATE m_persons SET group_name = ? WHERE group_name = ?',
-                [item.new_group_name, item.old_group_name]
-            );
-        }
-
-        // Update device counts
-        for (const item of device_count) {
-            await query(
-                'UPDATE m_devices SET group_name = ? WHERE group_name = ?',
-                [item.new_group_name, item.old_group_name]
-            );
-        }
-
-        res.status(200).json({ message: 'Permission data updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Database error', error: error.message });
-    }
-});
-
-router.post('/permissiondata/addgroup', async (req, res) => {
-    try {
-        const { group_name } = req.body;
-        // Since group_name is just a string field in m_persons and m_devices,
-        // we don't need to insert it anywhere. Just return success.
-        res.status(200).json({ message: `Group ${group_name} added successfully` });
-=======
 router.post('/permissiondata/addgroup', async (req, res) => {
     try {
         console.log('[API] POST /permissiondata/addgroup', req.body);
@@ -90,15 +56,11 @@ router.post('/permissiondata/addgroup', async (req, res) => {
             [uuidv4(), group_name, scope, note || null]
         );
         res.status(200).json({ data: result, message: 'Permission group added' });
->>>>>>> 4285a258d2e63c8fe2828160d468d27e74f322f6
     } catch (error) {
         res.status(500).json({ message: 'Database error', error: error.message });
     }
 });
 
-<<<<<<< HEAD
-
-=======
 router.post('/permissiondata/deletegroup', async (req, res) => {
     try {
         console.log('[API] POST /permissiondata/deletegroup', req.body);
@@ -215,6 +177,5 @@ router.get('/permissiondata/visitorsgroup', async (req, res) => {
         res.status(500).json({ message: 'Database error', error: error.message });
     }
 });
->>>>>>> 4285a258d2e63c8fe2828160d468d27e74f322f6
 
 module.exports = router;
