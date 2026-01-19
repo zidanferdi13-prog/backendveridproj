@@ -14,10 +14,45 @@ class SecretController {
   static async syncSecret(deviceSn, payload) {
     logger.debug('Syncing secret', { deviceSn, payload });
     try {
+      const {
+        secretKeyType,
+        secretKeyCode,
+        secretKeyValue,
+        startTime,
+        expiryTime,
+        syncType,
+        isActive,
+      } = payload || {};
+
+      if (!secretKeyType || !secretKeyCode || !secretKeyValue || !startTime || !expiryTime) {
+        throw new Error('secretKeyType, secretKeyCode, secretKeyValue, startTime, and expiryTime are required');
+      }
+
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [`secret_sync_${deviceSn}_${Date.now()}`, deviceSn, 'secret_sync', 'info', 'Secret sync', JSON.stringify(payload)]
+        `INSERT INTO t_secret_keys (
+          device_sn, secret_key_type, secret_key_code, secret_key_value,
+          secret_key_start_time, secret_key_expiry_time, sync_type, is_active,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+          secret_key_value = VALUES(secret_key_value),
+          secret_key_start_time = VALUES(secret_key_start_time),
+          secret_key_expiry_time = VALUES(secret_key_expiry_time),
+          sync_type = VALUES(sync_type),
+          is_active = VALUES(is_active),
+          updated_at = NOW()`,
+        [
+          deviceSn,
+          secretKeyType,
+          secretKeyCode,
+          secretKeyValue,
+          startTime,
+          expiryTime,
+          syncType || null,
+          isActive !== false,
+        ]
       );
+
       return { success: true };
     } catch (error) {
       logger.error('Error syncing secret', { deviceSn, error: error.message });

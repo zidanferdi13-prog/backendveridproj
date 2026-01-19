@@ -102,12 +102,20 @@ function getPool() {
  * @returns {Promise<Array>}
  */
 async function query(sql, params = []) {
+  let connection = null;
   try {
-    const [rows] = await pool.execute(sql, params);
+    connection = await pool.getConnection();
+    // Ensure autocommit is on
+    await connection.query('SET AUTOCOMMIT=1');
+    const [rows] = await connection.execute(sql, params);
     return rows;
   } catch (error) {
     logger.error('Database query error', { error: error.message, sql });
     throw error;
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 }
 

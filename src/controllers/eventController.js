@@ -14,12 +14,11 @@ class EventController {
   static async recordAlarm(deviceSn, payload) {
     logger.debug('Recording alarm', { deviceSn, payload });
     try {
-      const alarmId = `alarm_${deviceSn}_${Date.now()}`;
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [alarmId, deviceSn, 'alarm', 'warning', 'Alarm event', JSON.stringify(payload)]
+        'INSERT INTO t_event_logs (device_sn, event_type, severity, message, event_data, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [deviceSn, 'alarm', 'warning', 'Alarm event', JSON.stringify(payload)]
       );
-      return { alarmId };
+      return { success: true };
     } catch (error) {
       logger.error('Error recording alarm', { deviceSn, error: error.message });
       throw error;
@@ -32,12 +31,11 @@ class EventController {
   static async recordHeartbeat(deviceSn, payload) {
     logger.debug('Recording heartbeat', { deviceSn, payload });
     try {
-      const heartbeatId = `hb_${deviceSn}_${Date.now()}`;
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [heartbeatId, deviceSn, 'heartbeat', 'info', 'Heartbeat event', JSON.stringify(payload)]
+        'INSERT INTO t_event_logs (device_sn, event_type, severity, message, event_data, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [deviceSn, 'heartbeat', 'info', 'Heartbeat event', JSON.stringify(payload)]
       );
-      return { heartbeatId };
+      return { success: true };
     } catch (error) {
       logger.error('Error recording heartbeat', { deviceSn, error: error.message });
       throw error;
@@ -50,12 +48,11 @@ class EventController {
   static async recordLWT(deviceSn, payload) {
     logger.debug('Recording LWT', { deviceSn, payload });
     try {
-      const lwtId = `lwt_${deviceSn}_${Date.now()}`;
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [lwtId, deviceSn, 'lwt', 'warning', 'LWT event', JSON.stringify(payload)]
+        'INSERT INTO t_event_logs (device_sn, event_type, severity, message, event_data, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [deviceSn, 'lwt', 'warning', 'LWT event', JSON.stringify(payload)]
       );
-      return { lwtId };
+      return { success: true };
     } catch (error) {
       logger.error('Error recording LWT', { deviceSn, error: error.message });
       throw error;
@@ -68,12 +65,11 @@ class EventController {
   static async recordConnection(deviceSn, payload) {
     logger.debug('Recording connection', { deviceSn, payload });
     try {
-      const connectionId = `conn_${deviceSn}_${Date.now()}`;
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [connectionId, deviceSn, 'connection', 'info', 'Connection event', JSON.stringify(payload)]
+        'INSERT INTO t_event_logs (device_sn, event_type, severity, message, event_data, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [deviceSn, 'connect', 'info', 'Connection event', JSON.stringify(payload)]
       );
-      return { connectionId };
+      return { success: true };
     } catch (error) {
       logger.error('Error recording connection', { deviceSn, error: error.message });
       throw error;
@@ -86,12 +82,11 @@ class EventController {
   static async recordDCS(deviceSn, payload) {
     logger.debug('Recording DCS', { deviceSn, payload });
     try {
-      const dcsId = `dcs_${deviceSn}_${Date.now()}`;
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [dcsId, deviceSn, 'dcs', 'info', 'Door sensor event', JSON.stringify(payload)]
+        'INSERT INTO t_event_logs (device_sn, event_type, severity, message, event_data, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [deviceSn, 'dcs', 'info', 'Door sensor event', JSON.stringify(payload)]
       );
-      return { dcsId };
+      return { success: true };
     } catch (error) {
       logger.error('Error recording DCS', { deviceSn, error: error.message });
       throw error;
@@ -104,12 +99,11 @@ class EventController {
   static async recordOnlineCheckReply(deviceSn, payload) {
     logger.debug('Recording online check reply', { deviceSn, payload });
     try {
-      const checkId = `check_${deviceSn}_${Date.now()}`;
       await query(
-        'INSERT INTO event_logs (event_id, device_sn, event_type, event_level, message, details, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [checkId, deviceSn, 'online_check_reply', 'info', 'Online check reply event', JSON.stringify(payload)]
+        'INSERT INTO t_event_logs (device_sn, event_type, severity, message, event_data, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [deviceSn, 'onlineCheck', 'info', 'Online check reply event', JSON.stringify(payload)]
       );
-      return { checkId };
+      return { success: true };
     } catch (error) {
       logger.error('Error recording online check reply', { deviceSn, error: error.message });
       throw error;
