@@ -145,10 +145,32 @@ router.post('/devicedata/remote', async (req, res) => {
     const { id_device, remote_command } = req.body;
     console.log('[API] POST /devicedata/remote', req.body);
     try {
+        // Get device SN
+        const deviceResult = await query('SELECT device_sn FROM m_devices WHERE id_device = ?', [id_device]);
+        if (deviceResult.length === 0) {
+            return res.status(404).json({ message: 'Device not found' });
+        }
+        const deviceSn = deviceResult[0].device_sn;
+        
+        // Update database
         const result = await query(
             `UPDATE m_devices SET remote_command = ?, remote_command_status = 'pending', remote_command_sent_at = NOW() WHERE id_device = ?`,
             [remote_command, id_device]
         );
+        
+        // Send MQTT control command (command: 1 for unlock)
+        const publisher = req.app?.locals?.publisher;
+        if (publisher && deviceSn) {
+            try {
+                await publisher.control(deviceSn, {
+                    command: parseInt(remote_command) || 1 // 1 = unlock door
+                });
+                console.log('[MQTT] Remote control sent to device', deviceSn);
+            } catch (mqttErr) {
+                console.error('[MQTT] Failed to send remote control', mqttErr.message);
+            }
+        }
+        
         res.status(200).json({ message: 'Remote command sent successfully', data: result });
     } catch (error) {
         res.status(500).json({ message: 'Database error', error: error.message });
@@ -177,7 +199,148 @@ router.post('/devicedata/configDevice', async (req, res) => {
                 id_device
             ]
         );
+        
+        // Send MQTT setConfig command if publisher available
+        const publisher = req.app?.locals?.publisher;
+        if (publisher && device_sn) {
+            try {
+                await publisher.setConfig(device_sn, {
+                    deviceName: device_name,
+                    deviceLocation: device_location
+                });
+                console.log('[MQTT] Config sent to device', device_sn);
+            } catch (mqttErr) {
+                console.error('[MQTT] Failed to send config', mqttErr.message);
+            }
+        }
+        
         res.status(200).json({ message: 'Device configuration updated successfully', data: result });
+    } catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// GET /devicedata/getConfig - Get device config via MQTT
+router.get('/devicedata/getConfig', async (req, res) => {
+    const { id_device } = req.query;
+    console.log('[API] GET /devicedata/getConfig', req.query);
+    if (!id_device) {
+        return res.status(400).json({ message: 'id_device is required' });
+    }
+    try {
+        // Get device from database
+        const deviceResult = await query('SELECT * FROM m_devices WHERE id_device = ?', [id_device]);
+        if (deviceResult.length === 0) {
+            return res.status(404).json({ message: 'Device not found' });
+        }
+        const device = deviceResult[0];
+        
+        // Send MQTT getConfig command
+        const publisher = req.app?.locals?.publisher;
+        if (publisher && device.device_sn) {
+            try {
+                const requestId = await publisher.getConfig(device.device_sn);
+                console.log('[MQTT] getConfig request sent', requestId);
+            } catch (mqttErr) {
+                console.error('[MQTT] Failed to get config', mqttErr.message);
+            }
+        }
+        
+        // Return current cached config from database
+        res.status(200).json({ 
+            message: 'Config request sent to device',
+            data: {
+                current_config: device.current_config,
+                device_sn: device.device_sn,
+                note: 'Live config will be received via MQTT reply'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /devicedata/restart - Restart device
+router.post('/devicedata/restart', async (req, res) => {
+    const { id_device } = req.body;
+    console.log('[API] POST /devicedata/restart', req.body);
+    if (!id_device) {
+        return res.status(400).json({ message: 'id_device is required' });
+    }
+    try {
+        const deviceResult = await query('SELECT device_sn FROM m_devices WHERE id_device = ?', [id_device]);
+        if (deviceResult.length === 0) {
+            return res.status(404).json({ message: 'Device not found' });
+        }
+        const deviceSn = deviceResult[0].device_sn;
+        
+        const publisher = req.app?.locals?.publisher;
+        if (publisher && deviceSn) {
+            try {
+                await publisher.restartDevice(deviceSn);
+                console.log('[MQTT] Restart command sent to device', deviceSn);
+                res.status(200).json({ message: 'Restart command sent to device' });
+            } catch (mqttErr) {
+                console.error('[MQTT] Failed to restart device', mqttErr.message);
+                res.status(500).json({ message: 'Failed to send restart command', error: mqttErr.message });
+            }
+        } else {
+            res.status(503).json({ message: 'MQTT publisher not available' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /devicedata/setTime - Set device time
+router.post('/devicedata/setTime', async (req, res) => {
+    const { id_device, timestamp, timezone } = req.body;
+    console.log('[API] POST /devicedata/setTime', req.body);
+    if (!id_device) {
+        return res.status(400).json({ message: 'id_device is required' });
+    }
+    try {
+        const deviceResult = await query('SELECT device_sn FROM m_devices WHERE id_device = ?', [id_device]);
+        if (deviceResult.length === 0) {
+            return res.status(404).json({ message: 'Device not found' });
+        }
+        const deviceSn = deviceResult[0].device_sn;
+        
+        const publisher = req.app?.locals?.publisher;
+        if (publisher && deviceSn) {
+            try {
+                await publisher.setTime(deviceSn, {
+                    timestamp: timestamp || Math.floor(Date.now() / 1000),
+                    timezone: timezone || 'UTC+0'
+                });
+                console.log('[MQTT] setTime command sent to device', deviceSn);
+                res.status(200).json({ message: 'Time sync command sent to device' });
+            } catch (mqttErr) {
+                console.error('[MQTT] Failed to set device time', mqttErr.message);
+                res.status(500).json({ message: 'Failed to send time sync command', error: mqttErr.message });
+            }
+        } else {
+            res.status(503).json({ message: 'MQTT publisher not available' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /devicedata/adjustgroups - Adjust device groups
+router.post('/devicedata/adjustgroups', async (req, res) => {
+    const { device_ids, new_group_name } = req.body;
+    console.log('[API] POST /devicedata/adjustgroups', req.body);
+    if (!device_ids || !Array.isArray(device_ids) || !new_group_name) {
+        return res.status(400).json({ message: 'device_ids (array) and new_group_name are required' });
+    }
+    try {
+        const placeholders = device_ids.map(() => '?').join(',');
+        const result = await query(
+            `UPDATE m_devices SET device_group = ?, updated_at = NOW() WHERE id_device IN (${placeholders})`,
+            [new_group_name, ...device_ids]
+        );
+        res.status(200).json({ message: 'Device groups adjusted', affected: result.affectedRows });
     } catch (error) {
         res.status(500).json({ message: 'Database error', error: error.message });
     }

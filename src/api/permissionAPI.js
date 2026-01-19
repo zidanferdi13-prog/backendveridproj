@@ -178,4 +178,155 @@ router.get('/permissiondata/visitorsgroup', async (req, res) => {
     }
 });
 
+// GET /permissiondata/visitor - List visitor permissions
+router.get('/permissiondata/visitor', async (req, res) => {
+    try {
+        console.log('[API] GET /permissiondata/visitor');
+        const groups = await query(
+            `SELECT 
+                vpg.*,
+                COUNT(va.id) as visitor_count
+             FROM visitor_permission_groups vpg
+             LEFT JOIN visitor_applications va ON va.status = 'approved'
+             GROUP BY vpg.id
+             ORDER BY vpg.group_name ASC`
+        );
+        res.status(200).json({ data: groups });
+    } catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /permissiondata/rename - Rename group
+router.post('/permissiondata/rename', async (req, res) => {
+    try {
+        console.log('[API] POST /permissiondata/rename', req.body);
+        const { id, new_group_name } = req.body;
+        if (!id || !new_group_name) {
+            return res.status(400).json({ message: 'id and new_group_name are required' });
+        }
+        const result = await query(
+            `UPDATE permission_groups SET group_name = ?, updated_at = NOW() WHERE id = ?`,
+            [new_group_name, id]
+        );
+        res.status(200).json({ data: result, message: 'Permission group renamed' });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /permissiondata/adjustpersonnel - Adjust personnel in group
+router.post('/permissiondata/adjustpersonnel', async (req, res) => {
+    try {
+        console.log('[API] POST /permissiondata/adjustpersonnel', req.body);
+        const { person_ids, new_group_name } = req.body;
+        
+        if (!person_ids || !Array.isArray(person_ids) || !new_group_name) {
+            return res.status(400).json({ message: 'person_ids (array) and new_group_name are required' });
+        }
+        
+        const placeholders = person_ids.map(() => '?').join(',');
+        const result = await query(
+            `UPDATE m_persons SET group_name = ?, updated_at = NOW() WHERE id IN (${placeholders})`,
+            [new_group_name, ...person_ids]
+        );
+        
+        res.status(200).json({ data: result, message: `${result.affectedRows} personnel adjusted` });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /permissiondata/adjustdevice - Adjust devices in group
+router.post('/permissiondata/adjustdevice', async (req, res) => {
+    try {
+        console.log('[API] POST /permissiondata/adjustdevice', req.body);
+        const { device_ids, new_group_name } = req.body;
+        
+        if (!device_ids || !Array.isArray(device_ids) || !new_group_name) {
+            return res.status(400).json({ message: 'device_ids (array) and new_group_name are required' });
+        }
+        
+        const placeholders = device_ids.map(() => '?').join(',');
+        const result = await query(
+            `UPDATE m_devices SET device_group = ?, updated_at = NOW() WHERE id_device IN (${placeholders})`,
+            [new_group_name, ...device_ids]
+        );
+        
+        res.status(200).json({ data: result, message: `${result.affectedRows} devices adjusted` });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
+// POST /permissiondata/resend - Resend permissions to device (MQTT whiteListSync)
+router.post('/permissiondata/resend', async (req, res) => {
+    try {
+        const { device_sn, group_name } = req.body;
+        console.log('[API] POST /permissiondata/resend', req.body);
+        
+        if (!device_sn) {
+            return res.status(400).json({ message: 'device_sn is required' });
+        }
+        
+        // Get users in the group (or all if no group specified)
+        let sql = 'SELECT * FROM m_persons WHERE 1=1';
+        const params = [];
+        
+        if (group_name) {
+            sql += ' AND group_name = ?';
+            params.push(group_name);
+        }
+        
+        const users = await query(sql, params);
+        
+        // Send whiteListSync via MQTT for each user
+        const publisher = req.app?.locals?.publisher;
+        if (publisher && users.length > 0) {
+            try {
+                for (const user of users) {
+                    // Sync face if registered
+                    if (user.feature_registered) {
+                        await publisher.whiteListSync(device_sn, {
+                            userType: 303, // Face
+                            userId: user.employee_number,
+                            syncFlag: 1,
+                            syncType: 1 // Add
+                        });
+                    }
+                    
+                    // Sync card if available
+                    if (user.access_card_number) {
+                        await publisher.whiteListSync(device_sn, {
+                            userType: 202, // Card
+                            userId: user.access_card_number,
+                            syncFlag: 1,
+                            syncType: 1 // Add
+                        });
+                    }
+                }
+                
+                console.log(`[MQTT] Permissions resent for ${users.length} users to device ${device_sn}`);
+                res.status(200).json({ 
+                    message: 'Permissions resent to device', 
+                    users_synced: users.length 
+                });
+            } catch (mqttErr) {
+                console.error('[MQTT] Failed to resend permissions', mqttErr.message);
+                res.status(500).json({ message: 'Failed to resend permissions', error: mqttErr.message });
+            }
+        } else if (!publisher) {
+            res.status(503).json({ message: 'MQTT publisher not available' });
+        } else {
+            res.status(200).json({ message: 'No users to sync' });
+        }
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Database error', error: error.message });
+    }
+});
+
 module.exports = router;
