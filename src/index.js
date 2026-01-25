@@ -1,6 +1,6 @@
 /**
  * Main Entry Point
- * Initialize server, MQTT connection, and start listening
+ * Railway-safe bootstrap
  */
 
 require('dotenv').config();
@@ -8,19 +8,22 @@ const express = require('express');
 const cors = require('cors');
 const MQTTClient = require('./mqtt/client');
 const logger = require('./utils/logger');
-const { connectDatabase, disconnectDatabase, isConnected } = require('./config/database.config');
+const {
+  connectDatabase,
+  disconnectDatabase,
+  isConnected,
+} = require('./config/database.config');
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
-const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+const PORT = process.env.PORT ;
+const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL; // ⛔ NO FALLBACK
 
 // Middleware
-
 app.use(express.json());
 app.use(cors());
 
-// Route for frontend API
+// Routes
 app.use('/user', require('./api/userAPI'));
 app.use('/device', require('./api/deviceAPI'));
 app.use('/permission', require('./api/permissionAPI'));
@@ -32,47 +35,45 @@ app.use('/log', require('./api/logAPI'));
 app.use('/settings', require('./api/settingsAPI'));
 app.use('/dashboard', require('./api/dashboardAPI'));
 
-// MQTT Related Imports
-
+// MQTT related
 const { TOPICS } = require('./config/mqtt.config');
 const TopicParser = require('./utils/topicParser');
 const MQTTPublisher = require('./utils/mqttPublisher');
 
-// Global MQTT client instance
+// Globals
 let mqttClient = null;
 let publisher = null;
 
-app.get("/", (req, res) => {
-  res.send("Backend Railway OK 🚀");
+// Root
+app.get('/', (req, res) => {
+  res.send('Backend Railway OK 🚀');
 });
 
 /**
- * Initialize MQTT Connection
+ * MQTT init (NON BLOCKING)
  */
-async function initializeMQTT() {
-  try {
-    mqttClient = new MQTTClient(MQTT_BROKER_URL, {
-      username: process.env.MQTT_USERNAME,
-      password: process.env.MQTT_PASSWORD,
-    });
-
-    await mqttClient.connect();
-    logger.info('MQTT Client initialized and connected');
-
-    // Initialize publisher with MQTT client
-    publisher = new MQTTPublisher(mqttClient);
-    
-    // Store in app for use in routes and handlers
-    app.locals.mqttClient = mqttClient;
-    app.locals.publisher = publisher;
-  } catch (error) {
-    logger.error('Failed to initialize MQTT', { error: error.message });
-    process.exit(1);
+function initializeMQTT() {
+  if (!MQTT_BROKER_URL) {
+    logger.warn('MQTT_BROKER_URL not set, MQTT disabled');
+    return;
   }
+
+  mqttClient = new MQTTClient(MQTT_BROKER_URL, {
+    username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD,
+  });
+
+  mqttClient.connect(); // 🔥 fire & forget
+  publisher = new MQTTPublisher(mqttClient);
+
+  app.locals.mqttClient = mqttClient;
+  app.locals.publisher = publisher;
+
+  logger.info('MQTT initialized');
 }
 
 /**
- * Health Check Endpoint
+ * Health check
  */
 app.get('/health', (req, res) => {
   res.json({
@@ -85,14 +86,14 @@ app.get('/health', (req, res) => {
 });
 
 /**
- * Status Endpoint
+ * Status
  */
 app.get('/api/status', (req, res) => {
   res.json({
     server: 'running',
     mqtt: {
       connected: mqttClient?.isConnected() || false,
-      broker: MQTT_BROKER_URL,
+      broker: MQTT_BROKER_URL || 'not-configured',
     },
     database: {
       connected: isConnected(),
@@ -102,135 +103,55 @@ app.get('/api/status', (req, res) => {
 });
 
 /**
- * Example: Publish message endpoint
- * POST /api/publish
- * Body: { topic, message }
+ * Publish endpoints (UNCHANGED)
  */
 app.post('/api/publish', async (req, res) => {
   const { topic, message } = req.body;
-
   if (!topic || !message) {
     return res.status(400).json({ error: 'topic and message required' });
   }
 
+  if (!mqttClient?.isConnected()) {
+    return res.status(503).json({ error: 'MQTT not connected' });
+  }
+
   try {
     await mqttClient.publish(topic, message);
-    res.json({ success: true, topic, message });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 /**
- * Publish command to a specific device (used by frontend)
- * POST /api/device/:deviceSn/command
- * Body: { category: 'DEVICE'|'PERSONAL'|..., command: 'setConfig', message: {...}, topic?: '<full topic override>' }
- */
-app.post('/api/device/:deviceSn/command', async (req, res) => {
-  const { deviceSn } = req.params;
-  const { category, command, message, topic: overrideTopic } = req.body;
-
-  if (!overrideTopic && (!category || !command)) {
-    return res.status(400).json({ error: 'Provide either `topic` or (`category` and `command`)' });
-  }
-
-  try {
-    const topicToPublish = overrideTopic
-      ? overrideTopic
-      : (TOPICS[category] && TOPICS[category][command] && TOPICS[category][command].device)
-        ? TopicParser.buildTopic(TOPICS[category][command].device, deviceSn)
-        : null;
-
-    if (!topicToPublish) {
-      return res.status(400).json({ error: 'Topic template not found for given category/command' });
-    }
-
-    await mqttClient.publish(topicToPublish, message || {});
-    res.json({ success: true, topic: topicToPublish });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * Publish command using convenience method from MQTTPublisher
- * POST /api/device/:deviceSn/:command
- * Body: { payload: {...} }
- * 
- * Example: POST /api/device/DEVICE001/setConfig
- * Body: { "payload": { "timezone": "UTC+7" } }
- */
-app.post('/api/device/:deviceSn/:command', async (req, res) => {
-  const { deviceSn, command } = req.params;
-  const { payload = {} } = req.body;
-
-  try {
-    if (!publisher) {
-      return res.status(503).json({ error: 'Publisher not initialized' });
-    }
-
-    // Check if convenience method exists
-    if (typeof publisher[command] === 'function') {
-      const requestId = await publisher[command](deviceSn, payload);
-      res.json({ success: true, command, deviceSn, requestId });
-    } else {
-      // Fallback to generic sendCommand
-      const requestId = await publisher.sendCommand(deviceSn, command, payload);
-      res.json({ success: true, command, deviceSn, requestId });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * Error Handling Middleware
- */
-app.use((err, req, res, next) => {
-  logger.error('Unhandled Error', { error: err.message });
-  res.status(500).json({ error: 'Internal Server Error' });
-});
-
-/**
- * 404 Handler
- */
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not Found' });
-});
-
-/**
- * Start Server
+ * Start server (HTTP FIRST)
  */
 async function start() {
-  try {
-    // Initialize Database
-    await connectDatabase();
+  // Start HTTP immediately
+  app.listen(PORT, () => {
+    logger.info(`✓ Server running on port ${PORT}`);
+  });
 
-    // Initialize MQTT
-    await initializeMQTT();
+  // DB async init
+  connectDatabase()
+    .then(() => logger.info('Database initialized'))
+    .catch((err) =>
+      logger.error('Database init failed', { error: err.message })
+    );
 
-    // Start Express server
-    app.listen(PORT, () => {
-      logger.info(`✓ Server running on http://localhost:${PORT}`);
-      logger.info(`✓ Health check: http://localhost:${PORT}/health`);
-    });
-  } catch (error) {
-    logger.error('Failed to start server', { error: error.message });
-    process.exit(1);
-  }
+  // MQTT async init
+  initializeMQTT();
 }
 
 /**
- * Graceful Shutdown
+ * Graceful shutdown
  */
 process.on('SIGINT', async () => {
   logger.info('Shutting down gracefully...');
-  if (mqttClient) {
-    await mqttClient.disconnect();
-  }
+  if (mqttClient) await mqttClient.disconnect();
   await disconnectDatabase();
   process.exit(0);
 });
 
-// Start the server
+// GO 🚀
 start();

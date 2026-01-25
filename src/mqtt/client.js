@@ -8,68 +8,80 @@ class MQTTClient {
     this.brokerUrl = brokerUrl;
     this.client = null;
     this.connected = false;
+
     this.options = {
       clientId: `veridface-server-${Math.random().toString(16).substr(2, 8)}`,
       clean: true,
-      connectTimeout: 10000,
-      reconnectPeriod: 1000,
+      connectTimeout: 10 * 1000,
+      reconnectPeriod: 5 * 1000, // lebih aman di cloud
+      keepalive: 60,
       ...options,
     };
   }
 
   /**
    * Connect to MQTT Broker
+   * ⚠️ TIDAK reject app startup
    */
   connect() {
-    return new Promise((resolve, reject) => {
-      try {
-        this.client = mqtt.connect(this.brokerUrl, this.options);
+    try {
+      logger.info('Connecting to MQTT Broker...', {
+        broker: this.brokerUrl,
+      });
 
-        this.client.on('connect', () => {
-          this.connected = true;
-          logger.info('✓ Connected to MQTT Broker', { broker: this.brokerUrl });
-          this.subscribeToTopics();
-          resolve();
+      this.client = mqtt.connect(this.brokerUrl, this.options);
+
+      this.client.on('connect', () => {
+        this.connected = true;
+        logger.info('✓ Connected to MQTT Broker', {
+          broker: this.brokerUrl,
         });
 
-        this.client.on('message', (topic, message) => {
-          this.handleMessage(topic, message);
-        });
+        this.subscribeToTopics();
+      });
 
-        this.client.on('error', (error) => {
-          logger.error('MQTT Client Error', { error: error.message });
-        });
+      this.client.on('reconnect', () => {
+        logger.warn('MQTT reconnecting...');
+      });
 
-        this.client.on('offline', () => {
-          this.connected = false;
-          logger.warn('MQTT Client Offline');
-        });
+      this.client.on('offline', () => {
+        this.connected = false;
+        logger.warn('MQTT client offline');
+      });
 
-        this.client.on('disconnect', () => {
-          logger.info('Disconnected from MQTT Broker');
+      this.client.on('error', (error) => {
+        logger.error('MQTT Client Error', {
+          error: error?.message || 'unknown error',
         });
+        // ⛔ JANGAN throw / reject
+      });
 
-        setTimeout(() => {
-          if (!this.connected) {
-            reject(new Error('MQTT Connection Timeout'));
-          }
-        }, 15000);
-      } catch (error) {
-        reject(error);
-      }
-    });
+      this.client.on('message', (topic, message) => {
+        this.handleMessage(topic, message);
+      });
+
+    } catch (error) {
+      logger.error('MQTT Init Error', {
+        error: error.message,
+      });
+    }
   }
 
   /**
    * Subscribe to all configured topics
    */
   subscribeToTopics() {
+    if (!this.client) return;
+
     SUBSCRIBE_TOPICS.forEach((topic) => {
-      this.client.subscribe(topic, (error) => {
+      this.client.subscribe(topic, { qos: 1 }, (error) => {
         if (error) {
-          logger.error('Subscribe Error', { topic, error: error.message });
+          logger.error('Subscribe Error', {
+            topic,
+            error: error.message,
+          });
         } else {
-          logger.debug('Subscribed to topic', { topic });
+          logger.info('Subscribed to topic', { topic });
         }
       });
     });
@@ -80,9 +92,13 @@ class MQTTClient {
    */
   async handleMessage(topic, message) {
     try {
-      logger.debug('Message Received', { topic, payload: message.toString() });
+      const payloadStr = message.toString();
+      logger.debug('Message Received', {
+        topic,
+        payload: payloadStr,
+      });
 
-      const payload = JSON.parse(message.toString());
+      const payload = JSON.parse(payloadStr);
       await topicRouter.routeMessage(topic, payload);
     } catch (error) {
       logger.error('Message Handling Error', {
@@ -93,49 +109,41 @@ class MQTTClient {
   }
 
   /**
-   * Publish message to topic
+   * Publish message
    */
   publish(topic, payload) {
-    return new Promise((resolve, reject) => {
-      if (!this.connected) {
-        reject(new Error('MQTT Client not connected'));
-        return;
-      }
+    if (!this.connected) {
+      logger.warn('Publish skipped, MQTT not connected', { topic });
+      return;
+    }
 
-      const message = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const message =
+      typeof payload === 'string' ? payload : JSON.stringify(payload);
 
-      this.client.publish(topic, message, { qos: 1 }, (error) => {
-        if (error) {
-          logger.error('Publish Error', { topic, error: error.message });
-          reject(error);
-        } else {
-          logger.debug('Message Published', { topic });
-          resolve();
-        }
-      });
-    });
-  }
-
-  /**
-   * Disconnect from broker
-   */
-  disconnect() {
-    return new Promise((resolve) => {
-      if (this.client) {
-        this.client.end(() => {
-          this.connected = false;
-          logger.info('Disconnected from MQTT Broker');
-          resolve();
+    this.client.publish(topic, message, { qos: 1 }, (error) => {
+      if (error) {
+        logger.error('Publish Error', {
+          topic,
+          error: error.message,
         });
       } else {
-        resolve();
+        logger.debug('Message Published', { topic });
       }
     });
   }
 
   /**
-   * Get connection status
+   * Disconnect
    */
+  disconnect() {
+    if (this.client) {
+      this.client.end(false, () => {
+        this.connected = false;
+        logger.info('MQTT disconnected');
+      });
+    }
+  }
+
   isConnected() {
     return this.connected;
   }
