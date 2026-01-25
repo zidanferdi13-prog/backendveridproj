@@ -79,6 +79,7 @@ app.get('/health', (req, res) => {
     status: 'ok',
     mqtt: mqttClient?.isConnected() ? 'connected' : 'disconnected',
     database: isConnected() ? 'connected' : 'disconnected',
+    dbHost: process.env.MYSQLHOST,
     timestamp: new Date(),
   });
 });

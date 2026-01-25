@@ -10,13 +10,14 @@ let pool = null;
 
 /**
  * Database connection pool configuration
+ * (SETTING TIDAK DIUBAH)
  */
 const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'veridface',
+  host: process.env.DB_HOST || process.env.MYSQLHOST,
+  port: process.env.DB_PORT || process.env.MYSQLPORT,
+  user: process.env.DB_USER || process.env.MYSQLUSER,
+  password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD,
+  database: process.env.DB_NAME || process.env.MYSQLDATABASE,
   waitForConnections: true,
   connectionLimit: 10,
   maxIdle: 10,
@@ -28,14 +29,11 @@ const poolConfig = {
 
 /**
  * Connect to MySQL/MariaDB
- * @returns {Promise<void>}
  */
 async function connectDatabase() {
   try {
-    // Create connection pool
     pool = mysql.createPool(poolConfig);
 
-    // Test connection
     const connection = await pool.getConnection();
     logger.info('✓ MySQL/MariaDB connected successfully', {
       host: poolConfig.host,
@@ -44,24 +42,25 @@ async function connectDatabase() {
     });
     connection.release();
 
-    // Add error handler for pool
     pool.on('error', (err) => {
       logger.error('MySQL pool error', { error: err.message });
     });
 
   } catch (error) {
+    // ⛔ JANGAN MATIKAN APP DI RAILWAY
     logger.error('Failed to connect to MySQL/MariaDB', { 
       error: error.message,
       host: poolConfig.host,
       database: poolConfig.database
     });
-    throw error;
+
+    // BIARKAN SERVER TETAP JALAN
+    pool = null;
   }
 }
 
 /**
  * Disconnect from MySQL/MariaDB
- * @returns {Promise<void>}
  */
 async function disconnectDatabase() {
   try {
@@ -72,13 +71,11 @@ async function disconnectDatabase() {
     }
   } catch (error) {
     logger.error('Error disconnecting from MySQL/MariaDB', { error: error.message });
-    throw error;
   }
 }
 
 /**
  * Get connection status
- * @returns {boolean}
  */
 function isConnected() {
   return pool !== null;
@@ -86,26 +83,25 @@ function isConnected() {
 
 /**
  * Get database pool instance
- * @returns {mysql.Pool}
  */
 function getPool() {
   if (!pool) {
-    throw new Error('Database pool not initialized. Call connectDatabase() first.');
+    throw new Error('Database pool not initialized.');
   }
   return pool;
 }
 
 /**
  * Execute a query
- * @param {string} sql - SQL query
- * @param {Array} params - Query parameters
- * @returns {Promise<Array>}
  */
 async function query(sql, params = []) {
+  if (!pool) {
+    throw new Error('Database not connected');
+  }
+
   let connection = null;
   try {
     connection = await pool.getConnection();
-    // Ensure autocommit is on
     await connection.query('SET AUTOCOMMIT=1');
     const [rows] = await connection.execute(sql, params);
     return rows;
@@ -113,18 +109,18 @@ async function query(sql, params = []) {
     logger.error('Database query error', { error: error.message, sql });
     throw error;
   } finally {
-    if (connection) {
-      connection.release();
-    }
+    if (connection) connection.release();
   }
 }
 
 /**
  * Get a connection from the pool
- * @returns {Promise<mysql.PoolConnection>}
  */
 async function getConnection() {
-  return await pool.getConnection();
+  if (!pool) {
+    throw new Error('Database not connected');
+  }
+  return pool.getConnection();
 }
 
 module.exports = {
