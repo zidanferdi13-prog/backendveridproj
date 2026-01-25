@@ -42,6 +42,10 @@ const MQTTPublisher = require('./utils/mqttPublisher');
 let mqttClient = null;
 let publisher = null;
 
+app.get("/", (req, res) => {
+  res.send("Backend Railway OK 🚀");
+});
+
 /**
  * Initialize MQTT Connection
  */
