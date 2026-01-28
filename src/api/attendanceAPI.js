@@ -19,7 +19,7 @@ router.get('/attendancedata', async (req, res) => {
                 'ar.device_in, ar.device_out, ar.status, ar.note ' +
                 'FROM attendance_records ar ' +
                 'INNER JOIN m_persons mp ON ar.id_user = mp.id ' +
-                'ORDER BY ar.createdate DESC');
+                'ORDER BY ar.updated_at DESC');
             const result = d1;
             res.status(200).json({ data: result });
             return;
@@ -30,7 +30,7 @@ router.get('/attendancedata', async (req, res) => {
                 'FROM attendance_records ar ' +
                 'INNER JOIN m_persons mp ON ar.id_user = mp.id ' +
                 'WHERE ar.attendance_date BETWEEN ? AND ? ' +
-                'ORDER BY ar.createdate DESC',
+                'ORDER BY ar.updated_at DESC',
                 [tanggalawal, tanggalakhir]);
             const result = d2;
             res.status(200).json({ data: result });
