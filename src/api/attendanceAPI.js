@@ -16,7 +16,7 @@ router.get('/attendancedata', async (req, res) => {
         if (!tanggalawal && !tanggalakhir) {
             const d1 = await query(
                 'SELECT ar.id_record , ar.id_user , mp.name , mp.mobile , ar.attendance_date , ar.time_in , ar.time_out ,' +
-                'ar.device_in, ar.device_out, ar.status, ar.note ' +
+                'ar.device_in, ar.device_out, ar.status, ar.note, mp.group_name  ' +
                 'FROM attendance_records ar ' +
                 'INNER JOIN m_persons mp ON ar.id_user = mp.id ' +
                 'ORDER BY ar.updated_at DESC');
@@ -26,7 +26,7 @@ router.get('/attendancedata', async (req, res) => {
         } else {
             const d2 = await query(
                 'SELECT ar.id_record , ar.id_user , mp.name , mp.mobile , ar.attendance_date , ar.time_in , ar.time_out ,' +
-                'ar.device_in, ar.device_out, ar.status, ar.note ' +  
+                'ar.device_in, ar.device_out, ar.status, ar.note, mp.group_name ' +  
                 'FROM attendance_records ar ' +
                 'INNER JOIN m_persons mp ON ar.id_user = mp.id ' +
                 'WHERE ar.attendance_date BETWEEN ? AND ? ' +
