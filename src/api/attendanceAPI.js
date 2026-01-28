@@ -11,9 +11,31 @@ const upload = multer({ dest: 'uploads/' });
 
 router.get('/attendancedata', async (req, res) => {
     try {
-        console.log('[API] GET /attendancedata');
-        const result = await query('SELECT * FROM attendance_records ORDER BY attendance_date DESC');
-        res.status(200).json({ data: result });
+        const {tanggalawal, tanggalakhir} = req.query;
+
+        if (!tanggalawal && !tanggalakhir) {
+            const d1 = await query(
+                'SELECT ar.id_record , ar.id_user , mp.name , mp.mobile , ar.attendance_date , ar.time_in , ar.time_out ,' +
+                'ar.device_in, ar.device_out, ar.status, ar.note ' +
+                'FROM attendance_records ar ' +
+                'INNER JOIN m_persons mp ON ar.id_user = mp.id ' +
+                'ORDER BY ar.createdate DESC');
+            const result = d1;
+            res.status(200).json({ data: result });
+            return;
+        } else {
+            const d2 = await query(
+                'SELECT ar.id_record , ar.id_user , mp.name , mp.mobile , ar.attendance_date , ar.time_in , ar.time_out ,' +
+                'ar.device_in, ar.device_out, ar.status, ar.note ' +  
+                'FROM attendance_records ar ' +
+                'INNER JOIN m_persons mp ON ar.id_user = mp.id ' +
+                'WHERE ar.attendance_date BETWEEN ? AND ? ' +
+                'ORDER BY ar.createdate DESC',
+                [tanggalawal, tanggalakhir]);
+            const result = d2;
+            res.status(200).json({ data: result });
+            return;
+        }
     } catch (error) {
         res.status(500).json({ message: 'Database error', error: error.message });
     }
