@@ -34,6 +34,7 @@ app.use('/attendancesys', require('./api/attendancesysAPI'));
 app.use('/log', require('./api/logAPI'));
 app.use('/settings', require('./api/settingsAPI'));
 app.use('/dashboard', require('./api/dashboardAPI'));
+app.use('/login', require('./api/loginAPI'));
 
 // MQTT related
 const { TOPICS } = require('./config/mqtt.config');

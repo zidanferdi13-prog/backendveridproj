@@ -7,7 +7,11 @@ const multer = require('multer');
 const fs = require('fs');
 const csv = require('csv-parse');
 const { route } = require('./userAPI');
+const authMiddleware = require('../middleware/authMiddleware');
 const upload = multer({ dest: 'uploads/' });
+
+// Protect all attendance routes with authentication
+// router.use(authMiddleware);
 
 router.get('/attendancedata', async (req, res) => {
     try {

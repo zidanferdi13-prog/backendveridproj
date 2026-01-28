@@ -357,5 +357,3 @@ router.get('/logdata/exportrecords', async (req, res) => {
 });
 
 module.exports = router;
-
-module.exports = router;
