@@ -19,7 +19,7 @@ router.post('/logindata', async (req, res) => {
     }
     
     try {
-        const user = await query('SELECT id, username, name, role FROM users WHERE username = ? AND password = ? AND is_active = 1', [username, password]);
+        const user = await query('SELECT id, username, name, role FROM t_user_password WHERE username = ? AND password = ? AND is_active = 1', [username, password]);
         
         if (user.length === 0) {
             return res.status(401).json({ message: 'Invalid username or password' });
