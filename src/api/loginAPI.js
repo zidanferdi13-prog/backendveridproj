@@ -8,9 +8,9 @@ const multer = require('multer');
 
 // Secret key untuk JWT (simpan di environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRY = '24h'; // Token berlaku 24 jam
+const JWT_EXPIRY = '24h'; 
 
-router.post('/logindata', async (req, res) => {
+router.post('/logindata', async (req, res) => { 
     const { username, password } = req.body;
     console.log('[API] POST /logindata', req.body);
     
