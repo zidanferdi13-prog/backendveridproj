@@ -1,5 +1,103 @@
 # API Endpoints Reference
 
+---
+
+## Authentication
+
+### POST /login/register
+Membuat akun user baru dengan password yang di-hash (bcrypt). Endpoint ini **dilindungi** oleh `ADMIN_SETUP_KEY` yang wajib dikirimkan sebagai header.
+
+> **Catatan:** `ADMIN_SETUP_KEY` adalah nilai yang Anda set di file `.env` server. Tanyakan ke admin server untuk mendapatkan nilainya.
+
+#### Cara menggunakan di Postman
+
+1. Buka Postman, buat request baru: **POST**
+2. Masukkan URL: `http://localhost:3000/login/register`
+3. Pergi ke tab **Headers**, tambahkan:
+
+   | Key                | Value                         |
+   |--------------------|-------------------------------|
+   | `Content-Type`     | `application/json`            |
+   | `x-admin-setup-key`| `<nilai ADMIN_SETUP_KEY Anda>`|
+
+4. Pergi ke tab **Body**, pilih **raw** dan format **JSON**, lalu isi:
+
+```json
+{
+  "username": "admin",
+  "password": "password123",
+  "name": "Administrator",
+  "role": "admin"
+}
+```
+
+**Field yang wajib diisi:**
+
+| Field      | Tipe   | Keterangan                                      |
+|------------|--------|-------------------------------------------------|
+| `username` | string | Username untuk login (harus unik)               |
+| `password` | string | Password (akan di-hash otomatis oleh server)    |
+| `name`     | string | Nama lengkap user                               |
+| `role`     | string | *(Opsional)* Role user. Default: `"user"`. Bisa juga `"admin"` |
+
+**Contoh Response Sukses (201):**
+```json
+{
+  "message": "User created successfully",
+  "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Contoh Response Error:**
+
+| Status | Kondisi                                      | Response                                                      |
+|--------|----------------------------------------------|---------------------------------------------------------------|
+| `400`  | `username`, `password`, atau `name` kosong   | `{ "message": "username, password, and name are required" }` |
+| `403`  | Header `x-admin-setup-key` salah atau hilang | `{ "message": "Forbidden: invalid or missing ADMIN_SETUP_KEY" }` |
+| `409`  | Username sudah terdaftar                     | `{ "message": "Username already exists" }`                    |
+
+---
+
+### POST /login/logindata
+Login dengan username dan password. Mengembalikan JWT token untuk autentikasi request selanjutnya.
+
+#### Cara menggunakan di Postman
+
+1. Buat request baru: **POST**
+2. Masukkan URL: `http://localhost:3000/login/logindata`
+3. Pergi ke tab **Headers**, tambahkan:
+
+   | Key            | Value              |
+   |----------------|--------------------|
+   | `Content-Type` | `application/json` |
+
+4. Pergi ke tab **Body**, pilih **raw** dan format **JSON**, lalu isi:
+
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+**Contoh Response Sukses (200):**
+```json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "username": "admin",
+    "name": "Administrator",
+    "role": "admin"
+  }
+}
+```
+
+> **Simpan nilai `token`** dari response ini. Gunakan sebagai `Authorization: Bearer <token>` di request lain yang membutuhkan autentikasi.
+
+---
+
 ## Health & Status
 
 ### GET /health
