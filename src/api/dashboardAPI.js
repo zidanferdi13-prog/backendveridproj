@@ -3,20 +3,16 @@ const router = express.Router();
 
 const { query } = require('../config/database.config');
 
-// GET /dashboard/stats - Get dashboard statistics
 router.get('/stats', async (req, res) => {
     try {
         console.log('[API] GET /dashboard/stats');
         
-        // Get device count
         const deviceResult = await query('SELECT COUNT(*) as count FROM m_devices');
         const deviceCount = deviceResult[0]?.count || 0;
         
-        // Get online device count
         const onlineResult = await query('SELECT COUNT(*) as count FROM m_devices WHERE status = "online"');
         const onlineCount = onlineResult[0]?.count || 0;
         
-        // Get today's access count
         const today = new Date().toISOString().split('T')[0];
         const accessResult = await query(
             'SELECT COUNT(*) as count FROM t_identification_records WHERE DATE(pass_datetime) = ?',
@@ -24,18 +20,15 @@ router.get('/stats', async (req, res) => {
         );
         const accessCount = accessResult[0]?.count || 0;
         
-        // Get today's visitor count
         const visitorResult = await query(
             'SELECT COUNT(*) as count FROM m_visitors WHERE DATE(visit_date) = ?',
             [today]
         );
         const visitorCount = visitorResult[0]?.count || 0;
         
-        // Get total users
         const userResult = await query('SELECT COUNT(*) as count FROM m_persons');
         const userCount = userResult[0]?.count || 0;
         
-        // Get today's alarm count
         const alarmResult = await query(
             'SELECT COUNT(*) as count FROM t_event_logs WHERE event_type = "alarm" AND DATE(event_datetime) = ?',
             [today]
@@ -69,7 +62,6 @@ router.get('/stats', async (req, res) => {
     }
 });
 
-// GET /dashboard/realtime - Real-time access monitoring
 router.get('/realtime', async (req, res) => {
     try {
         const { limit = 50, since } = req.query;
@@ -124,7 +116,6 @@ router.get('/realtime', async (req, res) => {
     }
 });
 
-// GET /dashboard/activity - Recent activity summary
 router.get('/activity', async (req, res) => {
     try {
         const { hours = 24 } = req.query;
@@ -132,7 +123,6 @@ router.get('/activity', async (req, res) => {
         
         const hoursAgo = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
         
-        // Access activity
         const accessActivity = await query(`
             SELECT 
                 DATE_FORMAT(pass_datetime, '%Y-%m-%d %H:00:00') as hour,
@@ -152,20 +142,17 @@ router.get('/activity', async (req, res) => {
     }
 });
 
-// GET /dashboard/master - Master data untuk dashboard (all-in-one)
 router.get('/masterData', async (req, res) => {
     try {
         console.log('[API] GET /dashboard/master');
         
         const today = new Date().toISOString().split('T')[0];
         
-        // 1. Device Active Count
         const deviceActiveResult = await query(
             'SELECT COUNT(*) as count FROM m_devices WHERE status = "online"'
         );
         const deviceActive = deviceActiveResult[0]?.count || 0;
         
-        // 2. Today Attendance
         const attendanceResult = await query(`
             SELECT 
                 COUNT(*) as total_checkin,
@@ -178,7 +165,6 @@ router.get('/masterData', async (req, res) => {
         const todayAttendance = attendanceResult[0]?.success_count || 0;
         const totalEmployees = attendanceResult[0]?.total_employees || 200;
         
-        // 3. Top Employee (most access records)
         const topEmployeeResult = await query(`
             SELECT 
                 mp.person_id,
@@ -200,7 +186,6 @@ router.get('/masterData', async (req, res) => {
             access_count: 0
         };
         
-        // 4. Attendance Trend - Daily (last 7 days)
         const attendanceTrendDaily = await query(`
             SELECT 
                 DATE_FORMAT(pass_datetime, '%Y-%m-%d') as date,
@@ -215,7 +200,6 @@ router.get('/masterData', async (req, res) => {
             ORDER BY date DESC
         `, [today]);
         
-        // 5. Attendance Trend - Weekly (last 4 weeks)
         const attendanceTrendWeekly = await query(`
             SELECT 
                 YEAR(pass_datetime) as year,
@@ -230,7 +214,6 @@ router.get('/masterData', async (req, res) => {
             ORDER BY year DESC, week DESC
         `, [today]);
         
-        // 6. Attendance Trend - Monthly (last 12 months)
         const attendanceTrendMonthly = await query(`
             SELECT 
                 DATE_FORMAT(pass_datetime, '%Y-%m') as month,
@@ -244,7 +227,6 @@ router.get('/masterData', async (req, res) => {
             ORDER BY month DESC
         `, [today]);
         
-        // 7. Today Recap - Daily
         const todayRecapDaily = await query(`
             SELECT 
                 'Today' as period,
@@ -257,7 +239,6 @@ router.get('/masterData', async (req, res) => {
             WHERE DATE(pass_datetime) = ?
         `, [today]);
         
-        // 8. Today Recap - Weekly
         const weekStartDate = new Date();
         weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay());
         const weekStart = weekStartDate.toISOString().split('T')[0];
@@ -274,7 +255,6 @@ router.get('/masterData', async (req, res) => {
             WHERE pass_datetime >= ?
         `, [weekStart]);
         
-        // 9. Today Recap - Monthly
         const monthStart = new Date();
         monthStart.setDate(1);
         const monthStartDate = monthStart.toISOString().split('T')[0];
@@ -291,7 +271,6 @@ router.get('/masterData', async (req, res) => {
             WHERE pass_datetime >= ?
         `, [monthStartDate]);
         
-        // 10. Real Time Access Monitoring (last 20 records)
         const realtimeAccess = await query(`
             SELECT 
                 ir.id,
@@ -321,7 +300,6 @@ router.get('/masterData', async (req, res) => {
             LIMIT 20
         `, [today]);
         
-        // 11. Device Status Summary
         const deviceStatus = await query(`
             SELECT 
                 md.device_sn,

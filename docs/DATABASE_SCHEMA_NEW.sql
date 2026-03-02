@@ -214,6 +214,8 @@ CREATE TABLE IF NOT EXISTS t_user_passwords (
     device_sn VARCHAR(50) NOT NULL COMMENT 'Device serial number',
     password VARCHAR(20) NOT NULL COMMENT 'Password untuk buka pintu',
     name VARCHAR(100) NOT NULL COMMENT 'Nama pemilik password',
+    username VARCHAR(100) COMMENT 'Username terkait (bisa employee_number atau user_id)',
+    role VARCHAR(50) COMMENT 'Role atau keterangan tambahan',
     
     is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
