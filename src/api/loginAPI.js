@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const { query } = require('../config/database.config');
 const { v4: uuidv4 } = require('uuid');
@@ -19,13 +21,21 @@ router.post('/logindata', async (req, res) => {
     }
     
     try {
-        const user = await query('SELECT id, username, name, role FROM t_user_passwords WHERE username = ? AND password = ? AND is_active = 1', [username, password]);
+        // NOTE: Passwords in the database must be bcrypt-hashed.
+        // If existing users have plain-text passwords, run a migration script
+        // or use the POST /login/register endpoint (with ADMIN_SETUP_KEY) to recreate users.
+        const user = await query('SELECT id, username, name, role, password FROM t_user_passwords WHERE username = ? AND is_active = 1', [username]);
         
         if (user.length === 0) {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
         
         const userData = user[0];
+
+        const passwordMatch = await bcrypt.compare(password, userData.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Invalid username or password' });
+        }
         
         // Generate JWT token
         const token = jwt.sign(
@@ -52,6 +62,42 @@ router.post('/logindata', async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Database error', error: error.message });
     }  
+});
+
+// POST /login/register - Create a new user with bcrypt-hashed password.
+// Protected by ADMIN_SETUP_KEY environment variable.
+router.post('/register', async (req, res) => {
+    const { username, password, name, role } = req.body;
+    const setupKey = req.headers['x-admin-setup-key'];
+
+    const adminKey = process.env.ADMIN_SETUP_KEY;
+    if (!adminKey || !setupKey ||
+        setupKey.length !== adminKey.length ||
+        !crypto.timingSafeEqual(Buffer.from(setupKey), Buffer.from(adminKey))) {
+        return res.status(403).json({ message: 'Forbidden: invalid or missing ADMIN_SETUP_KEY' });
+    }
+
+    if (!username || !password || !name) {
+        return res.status(400).json({ message: 'username, password, and name are required' });
+    }
+
+    try {
+        const existing = await query('SELECT id FROM t_user_passwords WHERE username = ?', [username]);
+        if (existing.length > 0) {
+            return res.status(409).json({ message: 'Username already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const id = uuidv4();
+        await query(
+            'INSERT INTO t_user_passwords (id, username, password, name, role, is_active) VALUES (?, ?, ?, ?, ?, 1)',
+            [id, username, hashedPassword, name, role || 'user']
+        );
+        res.status(201).json({ message: 'User created successfully', id });
+    } catch (error) {
+        console.error('[API] POST /login/register error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 module.exports = router;
