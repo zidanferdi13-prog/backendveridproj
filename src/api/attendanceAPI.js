@@ -11,7 +11,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const upload = multer({ dest: 'uploads/' });
 
 // Protect all attendance routes with authentication
-// router.use(authMiddleware);
+router.use(authMiddleware);
 
 router.get('/attendancedata', async (req, res) => {
     try {
